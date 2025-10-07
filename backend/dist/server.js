@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
+const database_1 = require("./config/database");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 // Basic middleware
@@ -25,12 +26,35 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
         message: 'Server is running',
-        port: PORT
+        port: PORT,
+        database: 'Connected' // This will be dynamic later
     });
 });
-// Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Backend server running at http://localhost:${PORT}`);
-    console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
-});
+// Start server with database connection
+const startServer = async () => {
+    try {
+        // Test database connection
+        const dbConnected = await (0, database_1.testConnection)();
+        if (dbConnected) {
+            // Sync database
+            await (0, database_1.syncDatabase)();
+        }
+        // Start Express server
+        app.listen(PORT, () => {
+            console.log(`🚀 Backend server running at http://localhost:${PORT}`);
+            console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
+            if (dbConnected) {
+                console.log(`🗄️  Database connected and synchronized`);
+            }
+            else {
+                console.log(`⚠️  Server running without database connection`);
+            }
+        });
+    }
+    catch (error) {
+        console.error('❌ Failed to start server:', error);
+        process.exit(1);
+    }
+};
+startServer();
 //# sourceMappingURL=server.js.map
